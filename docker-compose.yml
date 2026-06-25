@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: crm_database
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: crm_clientes
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/perfil_usuarios.csv:/docker-entrypoint-initdb.d/perfil_usuarios.csv # Mapeo para el COPY
+    networks:
+      - streaming_network
+
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: ml_service_container
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - modelos:/app/models      
+    depends_on:
+      - postgres
+    networks:
+      - streaming_network
+
+  dashboard:
+    build:
+      context: ./dashboard
+    container_name: dashboard_container
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data  
+      - modelos:/app/models          
+    depends_on:
+      - ml-service
+    networks:
+      - streaming_network
+
+volumes:
+  pgdata:    
+  modelos:  
+
+networks:
+  streaming_network:
+    driver: bridge
