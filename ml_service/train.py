@@ -39,12 +39,12 @@ def ejecutar_pipeline_etl():
         logging.info("Conectando al motor PostgreSQL 'crm_clientes'...")
         # NOTA: Usamos el host de red interna de docker "postgres"
         engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
-        perfil_usuarios = pd.read_sql("SELECT * FROM perfil_usuarios", engine)
+        perfil_usuario = pd.read_sql("SELECT * FROM perfil_usuarios", engine)
         logging.info("Extracción de perfiles desde Postgres completada con éxito.")
 
         # integración de fuentes mediante identificador único de negocio
         logging.info("Ejecutando operación Merge JOIN entre streaming y perfiles relacionales...")
-        data_consolidada = clientes_streaming.merge(perfil_usuarios, on="id_cliente", how="inner")
+        data_consolidada = clientes_streaming.merge(perfil_usuario, on="id_cliente", how="inner")
         
         # Validación de esquemas contra GIGO
         logging.info("Iniciando auditoría y validación de consistencia de esquemas...")
@@ -83,7 +83,25 @@ if __name__ == "__main__":
     # que está limpia y lista para entrenar el escalador y el KMeans:
     
     os.makedirs("models", exist_ok=True)
-    X = data.drop(columns=["cliente_id"])
+    clientes = pd.read_csv("data/usuarios_streaming.csv")
+
+    # Fuente desde la BD
+    engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
+
+    perfil = pd.read_sql(
+        """
+        SELECT *
+        FROM perfil_usuarios
+        """,
+        engine
+    )
+
+    # Integración
+    data = clientes.merge(perfil, on="id_cliente")
+
+    # Guarda el archivo con la data integrada
+    data.to_csv("data/data_clientes.csv", index=False)
+    X = data.drop(columns=["id_cliente"])
 
     # Escalamiento
     scaler = StandardScaler()
@@ -132,8 +150,9 @@ if __name__ == "__main__":
         "n_clusters": int(k_optimo),
         "varianza_pca": float(
             pca.explained_variance_ratio_.sum()
-        )
-    }
+        ),
+        "inercia": float(kmeans.inertia_)  
+        }
 
     with open("models/metricas.json", "w") as f:
         json.dump(metricas, f, indent=4)
