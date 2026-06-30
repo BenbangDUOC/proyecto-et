@@ -137,7 +137,7 @@ st.subheader("Comparación de los centroides de los clusters")
 variables = [
     col for col in clientes.select_dtypes(include=['float64', 'int64']).columns if col not in ['id_cliente','pc1', 'pc2', 'cluster']
 ]
-variables_seleccionadas = st.multiselect("Selecciona las variables a incluir en el radar chart:", options = variables, default=[variables[:5]])
+variables_seleccionadas = st.multiselect("Selecciona las variables a incluir en el radar chart:", options = variables, default=variables[:5])
 if len(variables_seleccionadas) < 3:
     st.warning("Por favor, selecciona al menos 3 variables para el radar chart.")
     st.stop()

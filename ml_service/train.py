@@ -99,8 +99,6 @@ if __name__ == "__main__":
     # Integración
     data = clientes.merge(perfil, on="id_cliente")
 
-    # Guarda el archivo con la data integrada
-    data.to_csv("data/data_clientes.csv", index=False)
     X = data.drop(columns=["id_cliente"])
 
     # Escalamiento
