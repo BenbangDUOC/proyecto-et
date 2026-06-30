@@ -133,12 +133,14 @@ st.plotly_chart(fig_heatmap)
 
 #Radar chart para comparar los centroides de los clusters
 st.subheader("Comparación de los centroides de los clusters")
+
+centroides['cluster'] = [str(i) for i in range(len(centroides))]
 #Preparación de los datos para el radar chart
 centroides_radar = centroides.set_index('cluster').T
 #Creación del radar chart
 fig_radar = go.Figure()
 for cluster in centroides_radar.columns:
-    fig_radar.add_trace(go.Scatter_polar(
+    fig_radar.add_trace(go.Scatterpolar(
         r=centroides_radar[cluster].values,
         theta=centroides_radar.index,
         fill='toself',
