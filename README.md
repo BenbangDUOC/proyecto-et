@@ -169,13 +169,59 @@ Esto levantará tres servicios:
 
 
 | PostgreSQL con puerto 5432 |
+
 | FastAPI con puerto 8000 |
+
 | Streamlit con puerto 8501 |
 
+---
+## Acceso a los servicios
+
+
+### API Machine Learning
+
+Abrir:
+
+
+```
+http://localhost:8000
+```
+
+
+Respuesta esperada:
+
+
+```json
+{
+ "mensaje": "Servicio ML funcionando"
+}
+```
 
 
 ---
 
+### Dashboard
+
+Abrir:
+
+
+```
+http://localhost:8501
+```
+
+
+El dashboard permite:
+
+- métricas del modelo.
+- visualizar los clientes segmentados con centroides.
+- visualizacion de los clientes segmentados con PCA.
+- cantidad de clientes por cluster. 
+- visualizar metodo del codo
+- perfil de los clusters
+- comparacion de los centroides con cluster
+- visualizacion interactiva de los datos del cliente
+
+---
 ### Detener servicios
 
 
