@@ -152,4 +152,28 @@ fig_radar.update_layout(
     margin=dict(l=0, r=0, t=30, b=0)
 )
 st.plotly_chart(fig_radar)
-#Falta por agregar: análisis de variables específicas por clúster (boxplot), análisis de la información obtenida
+
+#Visualización interactiva de los datos de clientes mediante boxplots
+st.subheader("Visualización interactiva de los datos de clientes")
+st.markdown("En esta sección se presentan boxplots interactivos para analizar la distribución de las variables de los clientes por cluster.")
+#Variables numéricas para boxplots
+variables = [
+    col for col in clientes.select_dtypes(include=['float64', 'int64']).columns if col not in ['pc1', 'pc2', 'cluster']
+]
+
+variable = st.selectbox("Selecciona una variable para visualizar su distribución por cluster:", variables)
+#Creación del boxplot
+fig_box = px.box(
+    clientes,
+    x='cluster',
+    y=variable,
+    color='cluster',
+    title=f'Distribución de {variable} por cluster',
+    labels={'cluster': 'Cluster', variable: variable}
+)
+fig_box.update_layout(
+    xaxis_title='Cluster',
+    yaxis_title=variable,
+    margin=dict(l=0, r=0, t=30, b=0)
+)
+st.plotly_chart(fig_box)
