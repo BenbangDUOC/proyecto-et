@@ -49,11 +49,11 @@ El sistema se compone de tres microservicios independientes e imbricados mediant
 |                               | (Persistencia cruzada de artefactos)  |
 |                               +------------------------------------+  |
 +-----------------------------------------------------------------------+
-
+```
 ## Estructura del Proyecto
 
 El repositorio mantiene la siguiente jerarquía estricta de componentes para garantizar la modularidad y el aislamiento de responsabilidades:
-
+```text
 / (Raíz del proyecto)
 │
 ├── docker-compose.yml              # Orquestador maestro multiservicio
@@ -81,7 +81,7 @@ El repositorio mantiene la siguiente jerarquía estricta de componentes para gar
     ├── data_usuarios.csv           # Matriz analítica intermedia consolidada
     ├── centroides.csv              # Coordenadas matemáticas de los clústeres
     └── clientes_segmentados.csv    # Registros etiquetados con su clúster asignado
-
+```
 ---
 
 ## Tecnologías Utilizadas
@@ -146,3 +146,98 @@ Datos demográficos y transaccionales históricos alojados en un motor de base d
 * cantidad_perfiles_creados
 * interacciones_mensuales_soporte
 * distancia_promedio_red_km
+
+---
+
+## Requisitos
+
+Es necesario contar con las siguientes herramientas instaladas en el sistema:
+* Docker
+* Docker Compose
+
+### Levantar la Solución
+
+Desde la raíz del proyecto, ejecute el siguiente comando en su terminal:
+
+
+```bash
+docker compose up --build
+```
+
+
+Esto levantará tres servicios:
+
+
+| PostgreSQL con puerto 5432 |
+| FastAPI con puerto 8000 |
+| Streamlit con puerto 8501 |
+
+
+
+---
+
+### Detener servicios
+
+
+Para detener los contenedores:
+
+
+```bash
+docker compose down
+```
+
+
+Para eliminar también los volúmenes:
+
+
+```bash
+docker compose down -v
+```
+
+---
+
+### Para cambios de código
+
+
+Para detener los contenedores:
+
+
+```bash
+docker compose down
+```
+
+
+Para eliminar también los volúmenes:
+
+
+```bash
+docker compose build --no-cache
+```
+
+
+Luego, levantamos 
+
+
+```bash
+docker compose up
+```
+
+---
+Para verificar el contenido de la tabla
+
+```bash
+docker exec -it crm_database psql -U admin -d crm_clientes
+```
+
+Luego, para ver las tablas, ejecutar
+
+```bash
+\dt
+```
+
+
+---
+
+### Objetivo del proyecto
+
+Construir e integrar una solución analítica de aprendizaje no supervisado mediante el algoritmo K-Means para segmentar a los usuarios de la plataforma de streaming. El propósito es descubrir patrones de comportamiento y perfiles de consumo para diseñar estrategias comerciales dirigidas de recomendación de contenido, retención de clientes en riesgo de fuga y maximización del consumo digital.
