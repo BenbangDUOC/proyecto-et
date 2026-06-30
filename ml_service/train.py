@@ -166,6 +166,9 @@ if __name__ == "__main__":
         centroides_original,
         columns=X.columns
     )
+    centroides_pca = pca.transform(kmeans.cluster_centers_)
+    centroides_df["pc1"] = centroides_pca[:, 0]
+    centroides_df["pc2"] = centroides_pca[:, 1]
 
     centroides_df.to_csv("data/centroides.csv", index=False)
 

@@ -48,10 +48,12 @@ with col4:
 #Método del codo para determinar el número óptimo de clusters
 st.subheader("Método del codo")
 st.markdown("El método del codo es una técnica utilizada para determinar el número óptimo de clusters en un conjunto de datos.")
+k_values = metricas['lista_k'].iloc[0]
+inercia_values = metricas['lista_inercias'].iloc[0]
 fig_elbow = go.Figure()
 fig_elbow.add_trace(go.Scatter(
-    x=metricas['k_values'],
-    y=metricas['inertia_values'],
+    x=k_values,
+    y=inercia_values,
     mode='lines+markers',
     name='Inercia'
 ))
