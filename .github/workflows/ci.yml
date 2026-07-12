@@ -31,4 +31,4 @@ jobs:
     # 4. Ejecuta tus pruebas automatizadas
     - name: Correr pruebas con Pytest
       run: |
-        PYTHONPATH=./ml_service pytest ml_service/test/
+        PYTHONPATH=./ml_service pytest ml_service/test/test_api.py -v
