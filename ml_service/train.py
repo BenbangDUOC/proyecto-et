@@ -9,8 +9,20 @@ from sklearn.metrics import silhouette_score
 import json
 from kneed import KneeLocator
 from sklearn.decomposition import PCA
-
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split, cross_validate, GridSearchCV, StratifiedKFold, RandomizedSearchCV
+import scipy.stats as stats
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # ============================================================================
 # BLOQUE 1 (INTEGRANTE 1): CONFIGURACIÓN DE LOGS DE AUDITORÍA Y COMPONENTE ETL
 # ============================================================================
@@ -140,29 +152,89 @@ if __name__ == "__main__":
     # Guarda data con los cluster y dos componentes principales
     data.to_csv("data/clientes_segmentados.csv", index=False)
 
-    # Guarda las métricas 
-    metricas = {
+
+    #Prediccion ---------------------------------------------------------
+    seed = 67
+    
+    cols_num = ['cantidad_contenidos_vistos', 
+    'porcentaje_finalizacion', 'tiempo_promedio_sesion_min', 
+    'cantidad_generos_consumidos', 'porcentaje_uso_promociones', 
+    'antiguedad_cliente_meses', 'edad', 'dispositivos_registrados', 
+    'porcentaje_uso_app_movil', 'cantidad_perfiles_creados', 
+    'interacciones_mensuales_soporte', 'distancia_promedio_red_km']
+
+    # Pipeline numérico
+    pipe_num = Pipeline(steps=[
+        ("imputacion", SimpleImputer(strategy="mean")),
+        ("escalado", StandardScaler())
+    ])
+
+    preprocesador = ColumnTransformer(
+        transformers=[
+            ("num", pipe_num, cols_num),
+        ],
+        remainder='drop'
+    )
+    
+    # Queremos predecir el gasto mensual numérico
+    y = data['gasto_mensual']
+    X = data.drop(columns=['id_cliente', 'cluster', 'pc1', 'pc2', 'gasto_mensual'])
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
+
+    pipeline_modelo_lr = Pipeline([
+        ('preprocesamiento', preprocesador), 
+        ('modelo', LinearRegression())
+    ])
+
+    print("Entrenando Regresión Lineal")
+    pipeline_modelo_lr.fit(X_train, y_train)
+
+    y_pred = pipeline_modelo_lr.predict(X_test)
+    
+    # Métricas de regresión 
+    r2 = r2_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+
+    print(f"R2 Score (Varianza explicada): {r2}")
+    print(f"Error Absoluto Medio (MAE): {mae}")
+
+    # Guardamos el pipeline lineal
+    with open('models/modelo_regresion.pkl', 'wb') as f:
+        pickle.dump(pipeline_modelo_lr, f)
+
+    metricas_dict = {}
+    
+    # Guardamos las métricas de regresión
+    metricas_dict['lr_r2_score'] = float(r2)
+    metricas_dict['lr_mse'] = float(mse)
+    metricas_dict['lr_mae'] = float(mae)
+
+
+    # Guardamos las métricas K-Means en el mismo diccionario para unificar todo
+    metricas_dict.update({
         "k_optimo": int(k_optimo),
-        "silhouette_score": silhouette_score(X_scaled, data["cluster"]),
+        "silhouette_score": float(silhouette_score(X_scaled, data["cluster"])),
         "n_clientes": int(len(data)),
         "n_clusters": int(k_optimo),
-        "varianza_pca": float(
-            pca.explained_variance_ratio_.sum()
-        ),
+        "varianza_pca": float(pca.explained_variance_ratio_.sum()),
         "inercia": float(kmeans.inertia_),          
         "lista_inercias": [float(i) for i in inertias], 
         "lista_k": list(range(2, 11))
-        }
+    })
 
     with open("models/metricas.json", "w") as f:
-        json.dump(metricas, f, indent=4)
-
+        json.dump(metricas_dict, f, indent=4)
     # Guarda los cenroides
     centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
 
+    cols_para_centroides = [c for c in data.columns if c not in ["id_cliente", "cluster", "pc1", "pc2"]]
+    centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
+    
     centroides_df = pd.DataFrame(
         centroides_original,
-        columns=X.columns
+        columns=cols_para_centroides 
     )
     centroides_pca = pca.transform(kmeans.cluster_centers_)
     centroides_df["pc1"] = centroides_pca[:, 0]
