@@ -50,7 +50,7 @@ def ejecutar_pipeline_etl():
         # extracción desde la base de datos contenerizada de Postgres
         logging.info("Conectando al motor PostgreSQL 'crm_clientes'...")
         # NOTA: Usamos el host de red interna de docker "postgres"
-        engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
+        engine = create_engine("postgresql://admin:password@localhost:5432/crm_clientes")
         perfil_usuario = pd.read_sql("SELECT * FROM perfil_usuarios", engine)
         logging.info("Extracción de perfiles desde Postgres completada con éxito.")
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     clientes = pd.read_csv("data/usuarios_streaming.csv")
 
     # Fuente desde la BD
-    engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
+    engine = create_engine("postgresql://admin:password@localhost:5432/crm_clientes")
 
     perfil = pd.read_sql(
         """
@@ -154,10 +154,8 @@ if __name__ == "__main__":
 
 
     #Prediccion ---------------------------------------------------------
-    # --- 1. PREPARACIÓN DE DATOS ---
     seed = 67
     
-    # IMPORTANTE: Quitamos 'gasto_mensual' de esta lista porque ahora será "y" (lo que predecimos)
     cols_num = ['cantidad_contenidos_vistos', 
     'porcentaje_finalizacion', 'tiempo_promedio_sesion_min', 
     'cantidad_generos_consumidos', 'porcentaje_uso_promociones', 
@@ -178,28 +176,23 @@ if __name__ == "__main__":
         remainder='drop'
     )
     
-    # --- 2. VARIABLE OBJETIVO (REGRESIÓN) ---
     # Queremos predecir el gasto mensual numérico
     y = data['gasto_mensual']
     X = data.drop(columns=['id_cliente', 'cluster', 'pc1', 'pc2', 'gasto_mensual'])
 
-    # IMPORTANTE: Eliminamos "stratify=y" porque es exclusivo de clasificación.
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
 
-    # --- 3. DEFINICIÓN DEL PIPELINE Y ENTRENAMIENTO ---
-    # La regresión lineal estándar no necesita RandomizedSearchCV, por lo que el código es más rápido y directo
     pipeline_modelo_lr = Pipeline([
         ('preprocesamiento', preprocesador), 
         ('modelo', LinearRegression())
     ])
 
-    print("Entrenando Regresión Lineal...")
+    print("Entrenando Regresión Lineal")
     pipeline_modelo_lr.fit(X_train, y_train)
 
-    # --- 4. EVALUACIÓN DEL MODELO ---
     y_pred = pipeline_modelo_lr.predict(X_test)
     
-    # Métricas de regresión (Reemplazan al F1-Score)
+    # Métricas de regresión 
     r2 = r2_score(y_test, y_pred)
     mse = mean_squared_error(y_test, y_pred)
     mae = mean_absolute_error(y_test, y_pred)
@@ -207,7 +200,6 @@ if __name__ == "__main__":
     print(f"R2 Score (Varianza explicada): {r2}")
     print(f"Error Absoluto Medio (MAE): {mae}")
 
-    # --- 5. PERSISTENCIA (GUARDADO PARA LA API) ---
     # Guardamos el pipeline lineal
     with open('models/modelo_regresion.pkl', 'wb') as f:
         pickle.dump(pipeline_modelo_lr, f)
@@ -220,7 +212,6 @@ if __name__ == "__main__":
     metricas_dict['lr_mae'] = float(mae)
 
 
-    # --- 6. MÉTRICAS KMEANS ---
     # Guardamos las métricas K-Means en el mismo diccionario para unificar todo
     metricas_dict.update({
         "k_optimo": int(k_optimo),
@@ -233,10 +224,9 @@ if __name__ == "__main__":
         "lista_k": list(range(2, 11))
     })
 
-    # Guardamos todo en un solo archivo final
     with open("models/metricas.json", "w") as f:
         json.dump(metricas_dict, f, indent=4)
-    #FIN PREDICCION=======================================================
+
     # Guarda los cenroides
     centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
 
