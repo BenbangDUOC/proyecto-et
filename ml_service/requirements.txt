@@ -6,3 +6,6 @@ scikit-learn
 sqlalchemy
 kneed
 psycopg2-binary
+pytest-httpx
+pytest
+httpx
