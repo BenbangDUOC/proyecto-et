@@ -6,13 +6,6 @@ from fastapi import FastAPI
 import os
 import subprocess
 
-# --- AUTO-ENTRENAMIENTO ---
-# Si la API detecta que los modelos no existen, ejecuta train.py internamente
-if not os.path.exists("models/decision_tree_optimizado.pkl"):
-    print("Modelos no encontrados. Entrenando desde cero dentro de Docker...")
-    subprocess.run(["python", "train.py"])
-# --------------------------
-
 app = FastAPI(title="Servicio Segmentación Clientes")
 
 # Carga la data que fue guardada en el entrenamiento
@@ -23,7 +16,7 @@ modelo = pickle.load(open("models/modelo_kmeans.pkl", "rb"))
 # Carga data escalada
 scaler = pickle.load(open("models/scaler.pkl", "rb"))
 # Carga de modelos predictivos
-modelo_dtc = pickle.load(open("models/decision_tree_optimizado.pkl", "rb"))
+modelo_lr = pickle.load(open("models/modelo_regresion.pkl", "rb"))
 # Carga las métricas
 with open("models/metricas.json") as f:
     metricas = json.load(f)

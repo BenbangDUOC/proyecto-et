@@ -21,7 +21,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split, cross_validate, GridSearchCV, StratifiedKFold, RandomizedSearchCV
 import scipy.stats as stats
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
-
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 # ============================================================================
 # BLOQUE 1 (INTEGRANTE 1): CONFIGURACIÓN DE LOGS DE AUDITORÍA Y COMPONENTE ETL
 # ============================================================================
@@ -154,88 +155,70 @@ if __name__ == "__main__":
 
     #Prediccion ---------------------------------------------------------
     # --- 1. PREPARACIÓN DE DATOS ---
-    # Definimos el riesgo de abandono: Menos de 10 horas al mes Y 1 o menos sesiones por semana
     seed = 67
-    cols_num = ['gasto_mensual', 'cantidad_contenidos_vistos', 
+    
+    # IMPORTANTE: Quitamos 'gasto_mensual' de esta lista porque ahora será "y" (lo que predecimos)
+    cols_num = ['cantidad_contenidos_vistos', 
     'porcentaje_finalizacion', 'tiempo_promedio_sesion_min', 
     'cantidad_generos_consumidos', 'porcentaje_uso_promociones', 
     'antiguedad_cliente_meses', 'edad', 'dispositivos_registrados', 
     'porcentaje_uso_app_movil', 'cantidad_perfiles_creados', 
     'interacciones_mensuales_soporte', 'distancia_promedio_red_km']
 
-    # Pipeline para variables numéricas (Imputa nulos con la media y luego escala)
+    # Pipeline numérico
     pipe_num = Pipeline(steps=[
         ("imputacion", SimpleImputer(strategy="mean")),
         ("escalado", StandardScaler())
     ])
 
-    # Unimos los pipelines
     preprocesador = ColumnTransformer(
         transformers=[
             ("num", pipe_num, cols_num),
         ],
-        remainder='drop' # Ignora cualquier columna que no esté en las listas anteriores (como los IDs)
+        remainder='drop'
     )
-    # Separamos las características (X) y la etiqueta a predecir (y)
-# --- NUEVA VARIABLE OBJETIVO ---
-    y = data['cluster']
-    # Eliminamos columnas que no aportan al modelo de clasificación
-    X = data.drop(columns=['id_cliente', 'cluster', 'pc1', 'pc2'])
+    
+    # --- 2. VARIABLE OBJETIVO (REGRESIÓN) ---
+    # Queremos predecir el gasto mensual numérico
+    y = data['gasto_mensual']
+    X = data.drop(columns=['id_cliente', 'cluster', 'pc1', 'pc2', 'gasto_mensual'])
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed, stratify=y)
+    # IMPORTANTE: Eliminamos "stratify=y" porque es exclusivo de clasificación.
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
 
-    # --- 2. DEFINICIÓN DEL PIPELINE ---
-    # Debes asegurarte de definir el pipeline antes de pasarlo al RandomizedSearchCV
-    # Ahora el pipeline completo hace la limpieza, transformación y luego predice
-    pipeline_modelo_dtc = Pipeline([
+    # --- 3. DEFINICIÓN DEL PIPELINE Y ENTRENAMIENTO ---
+    # La regresión lineal estándar no necesita RandomizedSearchCV, por lo que el código es más rápido y directo
+    pipeline_modelo_lr = Pipeline([
         ('preprocesamiento', preprocesador), 
-        ('modelo', DecisionTreeClassifier(random_state=seed))
+        ('modelo', LinearRegression())
     ])
 
-# Este pipeline_modelo_dtc es el que le pasas al RandomizedSearchCV
+    print("Entrenando Regresión Lineal...")
+    pipeline_modelo_lr.fit(X_train, y_train)
 
-    # --- 3. TU CÓDIGO DE TUNING (Búsqueda de Hiperparámetros) ---
-    param_random_dtc = {
-        "modelo__criterion": ["gini", "entropy"],
-        "modelo__splitter": ["best", "random"],
-        "modelo__max_depth": stats.randint(3, 10),
-        "modelo__class_weight": ["balanced", None],
-        "modelo__min_samples_split": stats.randint(3, 20)
-    }
+    # --- 4. EVALUACIÓN DEL MODELO ---
+    y_pred = pipeline_modelo_lr.predict(X_test)
+    
+    # Métricas de regresión (Reemplazan al F1-Score)
+    r2 = r2_score(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
 
-    random_dtc = RandomizedSearchCV(
-    pipeline_modelo_dtc,
-    param_random_dtc,
-    n_iter=20,
-    cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=seed),
-    scoring="accuracy",  # Cambiado a 'accuracy' para clasificación multiclase
-    n_jobs=-1
-)
-
-    print("Entrenando Decision Tree con RandomizedSearchCV...")
-    random_dtc.fit(X_train, y_train)
-
-    # --- 4. EVALUACIÓN DEL MEJOR MODELO ---
-    # Extraemos el mejor modelo encontrado
-    mejor_dtc = random_dtc.best_estimator_
-
-    # Evaluamos con los datos de prueba
-    y_pred = mejor_dtc.predict(X_test)
-# Cambiado a 'weighted' para que funcione con múltiples clusters
-    score_f1_test = f1_score(y_test, y_pred, average='weighted')
-    print(f"Mejores hiperparámetros: {random_dtc.best_params_}")
-    print(f"F1-Score en Test: {score_f1_test}")
+    print(f"R2 Score (Varianza explicada): {r2}")
+    print(f"Error Absoluto Medio (MAE): {mae}")
 
     # --- 5. PERSISTENCIA (GUARDADO PARA LA API) ---
-    with open('models/decision_tree_optimizado.pkl', 'wb') as f:
-        pickle.dump(mejor_dtc, f)
+    # Guardamos el pipeline lineal
+    with open('models/modelo_regresion.pkl', 'wb') as f:
+        pickle.dump(pipeline_modelo_lr, f)
 
-    # Creamos un diccionario base en lugar de intentar leer uno que no existe
     metricas_dict = {}
     
-    # Guardamos el F1-Score y los mejores parámetros
-    metricas_dict['dtc_accuracy_score'] = float(random_dtc.best_score_)
-    metricas_dict['dtc_f1_weighted'] = float(score_f1_test)
+    # Guardamos las métricas de regresión
+    metricas_dict['lr_r2_score'] = float(r2)
+    metricas_dict['lr_mse'] = float(mse)
+    metricas_dict['lr_mae'] = float(mae)
+
 
     # --- 6. MÉTRICAS KMEANS ---
     # Guardamos las métricas K-Means en el mismo diccionario para unificar todo
@@ -257,9 +240,8 @@ if __name__ == "__main__":
     # Guarda los cenroides
     centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
 
-    # Usamos las columnas originales del dataset "data" (antes de dropear nada)
-    # Debes excluir las columnas que no eran numéricas/escaladas
-    cols_para_centroides = [c for c in data.columns if c not in ["id_cliente", "cluster", "pc1", "pc2", "riesgo_abandono"]]
+    cols_para_centroides = [c for c in data.columns if c not in ["id_cliente", "cluster", "pc1", "pc2"]]
+    centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
     
     centroides_df = pd.DataFrame(
         centroides_original,
