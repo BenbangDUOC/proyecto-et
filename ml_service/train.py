@@ -50,7 +50,7 @@ def ejecutar_pipeline_etl():
         # extracción desde la base de datos contenerizada de Postgres
         logging.info("Conectando al motor PostgreSQL 'crm_clientes'...")
         # NOTA: Usamos el host de red interna de docker "postgres"
-        engine = create_engine("postgresql://admin:password@localhost:5432/crm_clientes")
+        engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
         perfil_usuario = pd.read_sql("SELECT * FROM perfil_usuarios", engine)
         logging.info("Extracción de perfiles desde Postgres completada con éxito.")
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     clientes = pd.read_csv("data/usuarios_streaming.csv")
 
     # Fuente desde la BD
-    engine = create_engine("postgresql://admin:password@localhost:5432/crm_clientes")
+    engine = create_engine("postgresql://admin:password@postgres:5432/crm_clientes")
 
     perfil = pd.read_sql(
         """
@@ -226,7 +226,6 @@ if __name__ == "__main__":
 
     with open("models/metricas.json", "w") as f:
         json.dump(metricas_dict, f, indent=4)
-
     # Guarda los cenroides
     centroides_original = scaler.inverse_transform(kmeans.cluster_centers_)
 
