@@ -13,11 +13,11 @@ jobs:
     steps:
     # 1. Copia tu código a la máquina de GitHub
     - name: Checkout del código
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # 2. Instala la versión correcta de Python
     - name: Configurar Python 3.11
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: "3.11"
 
