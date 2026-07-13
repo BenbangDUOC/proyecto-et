@@ -23,6 +23,7 @@ import scipy.stats as stats
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from sklearn.tree import DecisionTreeRegressor
 # ============================================================================
 # BLOQUE 1 (INTEGRANTE 1): CONFIGURACIÓN DE LOGS DE AUDITORÍA Y COMPONENTE ETL
 # ============================================================================
@@ -193,23 +194,49 @@ if __name__ == "__main__":
     y_pred = pipeline_modelo_lr.predict(X_test)
     
     # Métricas de regresión 
-    r2 = r2_score(y_test, y_pred)
-    mse = mean_squared_error(y_test, y_pred)
-    mae = mean_absolute_error(y_test, y_pred)
+    r2_lr = r2_score(y_test, y_pred)
+    mse_lr = mean_squared_error(y_test, y_pred)
+    mae_lr = mean_absolute_error(y_test, y_pred)
 
-    print(f"R2 Score (Varianza explicada): {r2}")
-    print(f"Error Absoluto Medio (MAE): {mae}")
+    print(f"R2 Score (Varianza explicada): {r2_lr}")
+    print(f"Error Absoluto Medio (MAE): {mae_lr}")
 
     # Guardamos el pipeline lineal
     with open('models/modelo_regresion.pkl', 'wb') as f:
         pickle.dump(pipeline_modelo_lr, f)
+    #  Decision Tree Regressor
+    pipeline_dt = Pipeline([
+        ('preprocesamiento', preprocesador), 
+        ('modelo', DecisionTreeRegressor(max_depth=5, random_state=seed)) 
+    ])
 
+
+    pipeline_dt.fit(X_train, y_train)
+        
+    y_pred = pipeline_dt.predict(X_test)
+    r2_dt = r2_score(y_test, y_pred)
+    mae_dt = mean_absolute_error(y_test, y_pred)
+    mse_dt = mean_squared_error(y_test, y_pred)
+
+        
+    print(f"Resultados Decision Tree Regression: R2={r2_dt:.4f}, MAE={mae_dt:.4f}")
+
+    with open('models/modelo_arbol.pkl', 'wb') as f:
+        pickle.dump(pipeline_dt, f)
+
+    print("Modelos guardados en /models/")
     metricas_dict = {}
     
-    # Guardamos las métricas de regresión
-    metricas_dict['lr_r2_score'] = float(r2)
-    metricas_dict['lr_mse'] = float(mse)
-    metricas_dict['lr_mae'] = float(mae)
+    #Se guardan las metricas de el modelo de regresion lineal
+    metricas_dict['lr_r2'] = r2_lr
+    metricas_dict['lr_mse'] = mae_lr
+    metricas_dict['lr_mae'] = mae_lr
+    
+    #Se guardan las metricas del modelo de arbol de decision regresion
+    metricas_dict['dt_r2'] = r2_dt
+    metricas_dict['dt_mae'] = mae_dt
+    metricas_dict['dt_mse'] = mse_dt
+
 
 
     # Guardamos las métricas K-Means en el mismo diccionario para unificar todo
