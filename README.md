@@ -1,10 +1,7 @@
 # Sistema End-to-End de analítica y predicción para usuarios de streaming
 
-## Contexto de Negocio y Objetivos
+## Contexto de Negocio
 Una plataforma internacional de entretenimiento vía streaming digital busca mitigar la pérdida de clientes y maximizar el consumo dentro de la aplicación mediante estrategias comerciales diferenciadas (campañas de retención, recomendaciones de contenido dirigidas y beneficios de fidelización). Históricamente, la organización operaba bajo reglas heurísticas generales. 
-
-Este proyecto implementa una solución tecnológica **End-to-End (E2E)** que unifica datos analíticos aislados en múltiples entornos corporativos mediante un Pipeline ETL robusto, segmenta a los clientes de forma científica utilizando un algoritmo no supervisado **K-Means**, expone los artefactos mediante una API escalable de Machine Learning y aprovisiona un Dashboard gerencial interactivo. Toda la solución se encuentra orquestada y contenerizada bajo **Docker Compose**.
-
 ---
 
 ## Arquitectura de la Solución (Multi-Container Architecture)
