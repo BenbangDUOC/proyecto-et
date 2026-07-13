@@ -1,4 +1,4 @@
-# Sistema End-to-End de Segmentación de Usuarios de Streaming (K-Means)
+# Sistema End-to-End de analítica y predicción para usuarios de streaming
 
 ## Contexto de Negocio y Objetivos
 Una plataforma internacional de entretenimiento vía streaming digital busca mitigar la pérdida de clientes y maximizar el consumo dentro de la aplicación mediante estrategias comerciales diferenciadas (campañas de retención, recomendaciones de contenido dirigidas y beneficios de fidelización). Históricamente, la organización operaba bajo reglas heurísticas generales. 
@@ -71,6 +71,14 @@ El repositorio mantiene la siguiente jerarquía estricta de componentes para gar
 │   ├── Dockerfile                  # Plano de construcción para el entorno analítico
 │   └── requirements.txt            # Dependencias de computación científica y APIs
 │
+├── models/                         # Persistencia de modelos entrenados y artefactos analíticos
+│   ├── metricas.json               # Métricas de evaluación de los modelos de segmentación y regresión
+│   ├── modelo_arbol.pkl            # Modelo Decision Tree Regressor entrenado para la predicción
+│   ├── modelo_kmeans.pkl           # Modelo K-Means utilizado para la segmentación de clientes
+│   ├── modelo_regresion.pkl        # Modelo Linear Regression entrenado para la predicción
+│   ├── pca.pkl                     # Modelo PCA entrenado para la reducción de dimensionalidad y visualización de los clusters
+│   └── scaler.pkl                  # Transformador de escalamiento utilizado durante el entrenamiento
+│
 ├── database/                       # Inicialización y Motor de Base de Datos
 │   ├── init.sql                    # Script DDL de creación de tablas y cargas masivas
 │   └── perfil_usuarios.csv         # Datos transaccionales de origen CRM corporativo
@@ -97,7 +105,7 @@ La solución tecnológica se ha diseñado utilizando componentes de software des
 * Requests: Librería HTTP utilizada por la capa de visualización para comunicarse internamente con los servicios expuestos por la API analítica.
 
 ### Machine Learning
-* Scikit-Learn: Kit de herramientas científicas utilizado para el preprocesamiento de datos (StandardScaler) y para el entrenamiento e instanciación del algoritmo de agrupamiento no supervisado KMeans.
+* Scikit-Learn: Kit de herramientas científicas utilizado para el preprocesamiento de datos (StandardScaler) y para el entrenamiento e instanciación de los algoritmos de aprendizaje no supervisado(Kmeans) y supervisado(LinearRegression y DecisionTreeRegressor).
 * Kneed: Librería especializada empleada en la fase de optimización analítica para identificar de forma programática el punto de inflexión matemática óptimo (Elbow Method o Método del Codo).
 
 ### Datos
@@ -200,7 +208,7 @@ Respuesta esperada:
 
 ---
 
-### Dashboard
+## Dashboard
 
 Abrir:
 
@@ -209,8 +217,7 @@ Abrir:
 http://localhost:8501
 ```
 
-
-El dashboard permite:
+El dashboard de segmentación permite:
 
 - métricas del modelo.
 - visualizar los clientes segmentados con centroides.
@@ -220,6 +227,12 @@ El dashboard permite:
 - perfil de los clusters
 - comparacion de los centroides con cluster
 - visualizacion interactiva de los datos del cliente
+
+El dashboard predictivo permite:
+- comparar entre los dos modelos predictivos desarrollados.
+- visualizar métricas de regresión.
+- comparar rendimiento de los modelos.
+- visualizar resultados de predicciones individuales.
 
 ---
 ### Detener servicios
@@ -280,10 +293,20 @@ Luego, para ver las tablas, ejecutar
 ```bash
 \dt
 ```
+---
+### Modelos supervisados
+La solución incorpora dos modelos de aprendizaje supervisado orientados a tareas de regresión. Se utiliza Linear Regression y Decision Tree Regressor, permitiendo comparar el desempeño entre un modelo lineal y uno no lineal sobre este conjunto de datos.
 
+El dashboard incorpora un panel específico en el que se comparan ambos modelos mediante métricas de desempeño y predicciones realizadas sobre un mismo dato.
 
 ---
 
 ### Objetivo del proyecto
 
-Construir e integrar una solución analítica de aprendizaje no supervisado mediante el algoritmo K-Means para segmentar a los usuarios de la plataforma de streaming. El propósito es descubrir patrones de comportamiento y perfiles de consumo para diseñar estrategias comerciales dirigidas de recomendación de contenido, retención de clientes en riesgo de fuga y maximización del consumo digital.
+Construir e integrar una solución analítica que combine técnicas de aprendizaje no supervisado y supervisado para apoyar la toma de decisiones dentro de una plataforma de streaming.
+
+Mediante K-means se segmentan los usuarios según sus patrones de comportamiento, mientras que los modelos Linear Regression y Decision Tree Regressor permiten realizar predicciones sobre variables objetivos relevantes para el negocio.
+
+Finalmente, todos los resultados son publicados mediante una API REST y consumidos por dashboards interactivos desarrollados con Streamlit, proporcionando una plataforma completa para el análisis exploratorio, la segmentación y la predicción.
+
+El propósito de la segmentación es descubrir patrones de comportamiento y perfiles de consumo para diseñar estrategias comerciales dirigidas de recomendación de contenido, retención de clientes en riesgo de fuga y maximización del consumo digital. Mientras que el de la predicción es anticipar el valor económico que representaría un usuario a la empresa, permitiendo optimizar campañas comerciales y/o proyectar ingresos futuros.
