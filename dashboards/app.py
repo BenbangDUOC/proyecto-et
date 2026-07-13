@@ -32,13 +32,13 @@ def obtener_datos():
 try:
     clientes, centroides, metricas = obtener_datos()
 except Exception as e:
-    st.error(f"⚠️ Error al conectar con la API de FastAPI en Docker. Verifique la orquestación. Detalles: {e}")
+    st.error(f"Error al conectar con la API de FastAPI en Docker. Verifique la orquestación. Detalles: {e}")
     st.stop()
 
 # ============================================================================
 # ESTRUCTURA DE PESTAÑAS (TABS UNIFICADAS PARA EFT)
 # ============================================================================
-tab_segmentacion, tab_regresion = st.tabs(["🧩 Análisis de Segmentos (K-Means)", "📈 Predicción de Gasto (Regresión)"])
+tab_segmentacion, tab_regresion = st.tabs(["Análisis de Segmentos (K-Means)", "Predicción de Gasto (Regresión)"])
 
 # ----------------------------------------------------------------------------
 # PESTAÑA 1: SEGMENTACIÓN DE CLIENTES (APRENDIZAJE NO SUPERVISADO)
@@ -226,7 +226,7 @@ with tab_regresion:
                 perfiles = st.slider("Número de Perfiles Creados en Cuenta", 1, 10, 3)
                 distancia = st.number_input("Distancia Promedio al Nodo de Red (Km)", min_value=0.0, value=8.7)
 
-            btn_predecir = st.form_submit_button("🚀 Calcular Inferencia de Gasto", use_container_width=True)
+            btn_predecir = st.form_submit_button("Calcular Inferencia de Gasto", use_container_width=True)
 
     # Inferencia en vivo llamando de manera paralela a los endpoints seguros de FastAPI
     with col_res:
