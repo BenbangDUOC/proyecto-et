@@ -13,38 +13,45 @@ La solución analítica está diseñada bajo una arquitectura desacoplada y modu
 El sistema se compone de tres microservicios independientes e imbricados mediante una red virtual privada interna de Docker, aislando las responsabilidades analíticas, de almacenamiento y de interfaz de usuario.
 
 ```text
-                  +---------------------------------------------+
-                  |             MÁQUINA HOST LOCAL              |
-                  |     (Directorio compartido: ./data)         |
-                  |     - Archivo: usuarios_streaming.csv       |
-                  +----------------------+----------------------+
++----------------------------+             +----------------------------+
+|     REPOSITORIO REMOTO     | -----------> |       GITHUB ACTIONS      |
+|       (GitHub Cloud)       |  (Trigger)   |     (Tubería de CI/CD)    |
++-------------+--------------+             +-------------+--------------+
+              |                                          |
+              | (git pull de producción)                 | (Ejecuta Linter y 
+              v                                          |  test/test_api.py)
++-------------+------------------------------------------v--------------+
+|                           MÁQUINA HOST LOCAL                          |
+|                     (Directorio compartido: ./data)                   |
+|                     - Archivo: usuarios_streaming.csv                 |
++----------------------------------------+------------------------------+
                                          |
-                                         | (Mapeo por Bind Mount)
+                                         | (Orquestación: docker-compose up)
                                          v
 +-----------------------------------------------------------------------+
-|               ENTORNO CONTENERIZADO (streaming_network)               |
-|                                                                       |
-|  +-------------------+      +-------------------+     +------------+  |
-|  | Servicio postgres |      |Servicio ml-service|     | Servicio   |  |
-|  |  (crm_database)   |      | (ml_container)    |     | dashboard  |  |
-|  |   PostgreSQL 16   |      |API + train.py ETL |     | Streamlit  |  |
-|  +--------+----------+      +--------+----------+     +-----+------+  |
-|           |                          ^                      |         |
-|           |                          |                      |         |
-|           | (Extracción SQL de       | (Peticiones HTTP     |         |
-|           |  perfil_usuarios)        |  POST /predict)      |         |
-|           +--------------------------+                      |         |
-|                                      |                      |         |
-|                                      +----------------------+         |
-|                                                                       |
-|                   +-----------------------+                           |
-|                   |   Volumen Nombrado    |                           |
-|                   |  modelos           |                               | 
-|                   |  (Intercambio .pkl)   |                           |
-|                   +-----------+-----------+                           |
-|                               ^                                       |
-|                               | (Persistencia cruzada de artefactos)  |
-|                               +------------------------------------+  |
+|                ENTORNO CONTENERIZADO (streaming_network)               |
+|                                                                        |
+|  +-------------------+      +-------------------+      +------------+  |
+|  | Servicio postgres |      |Servicio ml-service|      | Servicio   |  |
+|  |  (crm_database)   |      | (ml_container)    |      | dashboard  |  |
+|  |    PostgreSQL 16  |      |API + train.py ETL |      | Streamlit  |  |
+|  +--------+----------+      +--------+----------+      +-----+------+  |
+|           |                          ^                       |         |
+|           |                          |                       |         |
+|           | (Extracción SQL de       | (Peticiones HTTP      |         |
+|           |  perfil_usuarios)        |  POST /predict)       |         |
+|           +--------------------------+                       |         |
+|                                      |                       |         |
+|                                      +----------------------+          |
+|                                                                        |
+|                    +-----------------------+                           |
+|                    |   Volumen Nombrado    |                           |
+|                    |   modelos             |                           |
+|                    |   (Intercambio .pkl)  |                           |
+|                    +-----------+-----------+                           |
+|                                its                                     |
+|                                | (Persistencia de artefactos)          |
+|                                +------------------------------------+  |
 +-----------------------------------------------------------------------+
 ```
 ## Estructura del Proyecto
@@ -121,6 +128,8 @@ La solución tecnológica se ha diseñado utilizando componentes de software des
 * Docker Compose: Herramienta de orquestación utilizada para definir, configurar y sincronizar el ciclo de vida de los servicios multiservicio (base de datos, api y frontend).
 * PostgreSQL 16: Motor de base de datos relacional robusto utilizado para simular el entorno transaccional CRM corporativo.
 
+### CI/CD & Gobernanza de Código
+* GitHub Actions: Tubería de automatización que se activa de forma automática ante cada actualización (push o pull request) en la rama main. Su función principal es ejecutar la suite de pruebas (test_api.py) para garantizar que los cambios introducidos por el equipo no generen errores en la API (FastAPI) ni corrompan la estructura de los modelos entrenados (.pkl) antes de su empaquetado y despliegue final en Docker.
 ---
 
 ## Datos
